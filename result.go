@@ -5,7 +5,7 @@ type Result[V any] struct {
 	value *V
 }
 
-type None struct{}
+type Nothing struct{}
 
 type Pair[L any, R any] struct {
 	Left  L
@@ -24,7 +24,7 @@ func Err[V any](err *Error) Result[V] {
 	}
 }
 
-func (r *Result[V]) Unwrap() V {
+func (r Result[V]) Unwrap() V {
 	if r.err != nil {
 		panic(r.err)
 	}
@@ -40,18 +40,18 @@ func (r *Result[V]) Expect(msg string) V {
 	return *r.value
 }
 
-func (r *Result[V]) UnwrapOrElse(fn func() V) V {
+func (r Result[V]) UnwrapOrElse(fn func(err Error) V) V {
 	if r.err != nil {
-		return fn()
+		return fn(*r.err)
 	}
 
 	return *r.value
 }
 
-func (r *Result[V]) UnwrapOrDefault() V {
+func (r Result[V]) UnwrapOrDefault() V {
 	return *r.value
 }
 
-func (r *Result[V]) Err() *Error {
+func (r Result[V]) Err() *Error {
 	return r.err
 }

@@ -1,15 +1,35 @@
 package xres
 
-type Option[V any] struct {
+type Option[V any] interface {
+	IsPresent() bool
+	Unwrap() V
+	UnwrapOrElse(fn func() V) V
+	UnwrapOrDefault() V
+}
+
+func Some[V any](value V) Option[V] {
+	return &option[V]{
+		value:     value,
+		isPresent: true,
+	}
+}
+
+func None[V any]() Option[V] {
+	return &option[V]{
+		isPresent: false,
+	}
+}
+
+type option[V any] struct {
 	value     V
 	isPresent bool
 }
 
-func (o *Option[V]) IsPresent() bool {
+func (o *option[V]) IsPresent() bool {
 	return o.isPresent
 }
 
-func (o *Option[V]) Unwrap() V {
+func (o *option[V]) Unwrap() V {
 	if !o.isPresent {
 		panic("option is empty")
 	}
@@ -17,7 +37,7 @@ func (o *Option[V]) Unwrap() V {
 	return o.value
 }
 
-func (o *Option[V]) UnwrapOrElse(fn func() V) V {
+func (o *option[V]) UnwrapOrElse(fn func() V) V {
 	if !o.isPresent {
 		return fn()
 	}
@@ -25,6 +45,6 @@ func (o *Option[V]) UnwrapOrElse(fn func() V) V {
 	return o.value
 }
 
-func (o *Option[V]) UnwrapOrDefault() V {
+func (o *option[V]) UnwrapOrDefault() V {
 	return o.value
 }
