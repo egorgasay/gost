@@ -1,6 +1,9 @@
-package xres
+package rusty
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 type Error struct {
 	baseCode     int
@@ -30,4 +33,16 @@ func (e *Error) ExtendedCode() int {
 
 func (e *Error) Message() string {
 	return e.message
+}
+
+func (e *Error) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf(`{"base_code":%d,"extended_code":%d,"message":"%s"}`, e.baseCode, e.extendedCode, e.message)), nil
+}
+
+func (e *Error) UnmarshalJSON(data []byte) error {
+	if err := json.Unmarshal(data, e); err != nil {
+		return err
+	}
+
+	return nil
 }

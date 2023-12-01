@@ -1,4 +1,4 @@
-package xres
+package rusty
 
 type Option[V any] interface {
 	IsPresent() bool
@@ -9,7 +9,7 @@ type Option[V any] interface {
 
 func Some[V any](value V) Option[V] {
 	return &option[V]{
-		value:     value,
+		value:     &value,
 		isPresent: true,
 	}
 }
@@ -21,7 +21,7 @@ func None[V any]() Option[V] {
 }
 
 type option[V any] struct {
-	value     V
+	value     *V
 	isPresent bool
 }
 
@@ -34,7 +34,7 @@ func (o *option[V]) Unwrap() V {
 		panic("option is empty")
 	}
 
-	return o.value
+	return *o.value
 }
 
 func (o *option[V]) UnwrapOrElse(fn func() V) V {
@@ -42,9 +42,14 @@ func (o *option[V]) UnwrapOrElse(fn func() V) V {
 		return fn()
 	}
 
-	return o.value
+	return *o.value
 }
 
 func (o *option[V]) UnwrapOrDefault() V {
-	return o.value
+	if !o.isPresent {
+		var v V
+		return v
+	}
+
+	return *o.value
 }

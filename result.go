@@ -1,4 +1,4 @@
-package xres
+package rusty
 
 type Result[V any] struct {
 	err   *Error
@@ -11,6 +11,8 @@ type Pair[L any, R any] struct {
 	Left  L
 	Right R
 }
+
+type Tuple[V any] []V
 
 func Ok[V any](value V) Result[V] {
 	return Result[V]{
