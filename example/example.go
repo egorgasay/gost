@@ -139,13 +139,13 @@ func main() {
 	var s = gost.NewDebugScopedLock()
 	var m = map[int]struct{}{}
 
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 20000; i++ {
 		go func() {
 			doWithLock(s, m)
 		}()
 	}
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(2 * time.Second)
 }
 
 func doWithLock(s gost.Scoped, m map[int]struct{}) {

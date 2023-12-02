@@ -2,6 +2,7 @@ package gost
 
 import (
 	"fmt"
+	"runtime"
 	"sync"
 )
 
@@ -11,14 +12,16 @@ type scopedLock struct {
 
 type debugScopedLock struct {
 	mu  sync.Mutex
-	log func(isAboutToLock bool)
+	log func()
 }
 
 func (d *debugScopedLock) Lock() func() {
-	d.log(true)
-	d.mu.Lock()
+	if !d.mu.TryLock() {
+		d.log()
+		d.mu.Lock()
+	}
+
 	return func() {
-		d.log(false)
 		d.mu.Unlock()
 	}
 }
@@ -31,14 +34,11 @@ func NewScopedLock() Scoped {
 	return &scopedLock{}
 }
 
-func NewDebugScopedLock(log ...func(isAboutToLock bool)) Scoped {
+func NewDebugScopedLock(log ...func()) Scoped {
 	if len(log) == 0 {
-		return &debugScopedLock{log: func(isAboutToLock bool) {
-			if isAboutToLock {
-				fmt.Println("Scoped Lock is About to be Locked")
-			} else {
-				fmt.Println("Scoped Lock is About to be Unlocked")
-			}
+		return &debugScopedLock{log: func() {
+			_, name, line, _ := runtime.Caller(2)
+			fmt.Printf("Scoped Lock is about to be Locked TWICE, in %s at line %d\n", name, line)
 		}}
 	}
 	return &debugScopedLock{log: log[0]}
