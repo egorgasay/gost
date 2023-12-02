@@ -1,52 +1,55 @@
-package rusty
+package gost
 
-type Option[V any] interface {
-	IsPresent() bool
-	Unwrap() V
-	UnwrapOrElse(fn func() V) V
-	UnwrapOrDefault() V
+type Option[V any] struct {
+	value *V
+}
+
+func (Option[V]) Some(value V) Option[V] {
+	return Option[V]{
+		value: &value,
+	}
+}
+
+func (Option[V]) None() Option[V] {
+	return Option[V]{}
 }
 
 func Some[V any](value V) Option[V] {
-	return &option[V]{
-		value:     &value,
-		isPresent: true,
+	return Option[V]{
+		value: &value,
 	}
 }
 
 func None[V any]() Option[V] {
-	return &option[V]{
-		isPresent: false,
-	}
+	return Option[V]{}
 }
 
-type option[V any] struct {
-	value     *V
-	isPresent bool
+func (o Option[V]) IsSome() bool {
+	return o.value != nil
 }
 
-func (o *option[V]) IsPresent() bool {
-	return o.isPresent
+func (o Option[V]) IsNone() bool {
+	return o.value == nil
 }
 
-func (o *option[V]) Unwrap() V {
-	if !o.isPresent {
+func (o Option[V]) Unwrap() V {
+	if o.value == nil {
 		panic("option is empty")
 	}
 
 	return *o.value
 }
 
-func (o *option[V]) UnwrapOrElse(fn func() V) V {
-	if !o.isPresent {
+func (o Option[V]) UnwrapOrElse(fn func() V) V {
+	if o.value == nil {
 		return fn()
 	}
 
 	return *o.value
 }
 
-func (o *option[V]) UnwrapOrDefault() V {
-	if !o.isPresent {
+func (o Option[V]) UnwrapOrDefault() V {
+	if o.value == nil {
 		var v V
 		return v
 	}

@@ -1,4 +1,4 @@
-package rusty
+package gost
 
 import (
 	"encoding/json"
@@ -35,7 +35,7 @@ func (e *Error) Message() string {
 	return e.message
 }
 
-func (e *Error) MarshalJSON() ([]byte, error) {
+func (e Error) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`{"base_code":%d,"extended_code":%d,"message":"%s"}`, e.baseCode, e.extendedCode, e.message)), nil
 }
 

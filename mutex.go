@@ -1,4 +1,4 @@
-package rusty
+package gost
 
 import (
 	"sync"
@@ -32,7 +32,7 @@ func NewRwLock[V any](v V) RwLock[V] {
 	}
 }
 
-func (m *Mutex[V]) Borrow() Arc[*V] {
+func (m *Mutex[V]) Borrow() Arc[*V, V] {
 	m.mu.Lock()
 	return NewArc(&m.v)
 }
@@ -55,7 +55,11 @@ func (m *Mutex[V]) Return(v V) {
 	m.mu.Unlock()
 }
 
-func (m *RwLock[V]) RBorrow() Arc[*V] {
+func (m *Mutex[V]) Release() {
+	m.mu.Unlock()
+}
+
+func (m *RwLock[V]) RBorrow() Arc[*V, V] {
 	m.mu.RLock()
 	return NewArc(&m.v)
 }
@@ -72,7 +76,7 @@ func (m *RwLock[V]) Release() {
 	m.mu.RUnlock()
 }
 
-func (m *RwLock[V]) WBorrow() Arc[*V] {
+func (m *RwLock[V]) WBorrow() Arc[*V, V] {
 	m.mu.Lock()
 	return NewArc(&m.v)
 }

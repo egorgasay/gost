@@ -1,4 +1,4 @@
-package rusty
+package gost
 
 type Result[V any] struct {
 	err   *Error
@@ -21,6 +21,18 @@ func Ok[V any](value V) Result[V] {
 }
 
 func Err[V any](err *Error) Result[V] {
+	return Result[V]{
+		err: err,
+	}
+}
+
+func (Result[V]) Ok(value V) Result[V] {
+	return Result[V]{
+		value: &value,
+	}
+}
+
+func (Result[V]) Err(err *Error) Result[V] {
 	return Result[V]{
 		err: err,
 	}
@@ -54,6 +66,14 @@ func (r Result[V]) UnwrapOrDefault() V {
 	return *r.value
 }
 
-func (r Result[V]) Err() *Error {
+func (r Result[V]) Error() *Error {
 	return r.err
+}
+
+func (r Result[V]) IsOk() bool {
+	return r.err == nil
+}
+
+func (r Result[V]) IsErr() bool {
+	return r.err != nil
 }
