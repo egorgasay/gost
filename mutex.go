@@ -5,12 +5,12 @@ import (
 )
 
 type Mutex[V any] struct {
-	mu sync.Mutex
+	mu *sync.Mutex
 	v  V
 }
 
 type RwLock[V any] struct {
-	mu sync.RWMutex
+	mu *sync.RWMutex
 	v  V
 }
 
@@ -21,14 +21,14 @@ var (
 func NewMutex[V any](v V) Mutex[V] {
 	return Mutex[V]{
 		v:  v,
-		mu: sync.Mutex{},
+		mu: &sync.Mutex{},
 	}
 }
 
 func NewRwLock[V any](v V) RwLock[V] {
 	return RwLock[V]{
 		v:  v,
-		mu: sync.RWMutex{},
+		mu: &sync.RWMutex{},
 	}
 }
 
