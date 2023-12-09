@@ -14,6 +14,39 @@ type RwLock[V any] struct {
 	v  V
 }
 
+type SecureMutexLocked[V any] struct {
+	mu *sync.Mutex
+	v  V
+}
+
+type SecureMutexUnlocked[V any] struct {
+	mu *sync.Mutex
+	v  V
+}
+
+func (m SecureMutexUnlocked[V]) Lock() SecureMutexLocked[V] {
+	m.mu.Lock()
+	return SecureMutexLocked[V]{
+		mu: m.mu,
+		v:  m.v,
+	}
+}
+
+func (m SecureMutexLocked[V]) Unlock() SecureMutexUnlocked[V] {
+	m.mu.Unlock()
+	return SecureMutexUnlocked[V]{
+		mu: m.mu,
+		v:  m.v,
+	}
+}
+
+func NewSecureMutex[V any](v V) SecureMutexUnlocked[V] {
+	return SecureMutexUnlocked[V]{
+		mu: &sync.Mutex{},
+		v:  v,
+	}
+}
+
 var (
 	ErrMutexIsLocked = NewError(0, 0, "mutex is locked")
 )

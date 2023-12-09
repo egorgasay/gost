@@ -77,3 +77,22 @@ func (r Result[V]) IsOk() bool {
 func (r Result[V]) IsErr() bool {
 	return r.err != nil
 }
+
+type switchOption bool
+
+const (
+	IsOk  switchOption = true
+	IsErr switchOption = false
+)
+
+func (r Result[V]) Switch() switchOption {
+	return r.err != nil
+}
+
+//func (r Result[V]) Separate() (v V, err *Error) {
+//	if r.value == nil {
+//		return v, r.err
+//	}
+//
+//	return *r.value, r.err
+//}

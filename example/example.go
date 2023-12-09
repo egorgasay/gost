@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/egorgasay/gost"
 	"strconv"
-	"time"
 )
 
 const (
@@ -136,16 +135,20 @@ func returnResultErrorV2() gost.Result[int] {
 }
 
 func main() {
-	var s = gost.NewDebugScopedLock()
-	var m = map[int]struct{}{}
+	//var s = gost.NewDebugScopedLock()
+	//var m = map[int]struct{}{}
+	//
+	//for i := 0; i < 20000; i++ {
+	//	go func() {
+	//		doWithLock(s, m)
+	//	}()
+	//}
+	//
+	//time.Sleep(2 * time.Second)
 
-	for i := 0; i < 20000; i++ {
-		go func() {
-			doWithLock(s, m)
-		}()
-	}
+	mu := gost.NewSecureMutex("key")
 
-	time.Sleep(2 * time.Second)
+	defer mu.Lock().Unlock()
 }
 
 func doWithLock(s gost.Scoped, m map[int]struct{}) {
