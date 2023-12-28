@@ -92,6 +92,18 @@ func (m *Mutex[V]) Release() {
 	m.mu.Unlock()
 }
 
+func (m *Mutex[V]) UpdateWithLock(fn func(v *V)) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	fn(&m.v)
+}
+
+func (m *Mutex[V]) SetWithLock(fn func(v V) V) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.v = fn(m.v)
+}
+
 func (m *RwLock[V]) RBorrow() Arc[*V, V] {
 	m.mu.RLock()
 	return NewArc(&m.v)
