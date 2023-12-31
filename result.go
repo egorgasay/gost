@@ -86,7 +86,7 @@ const (
 )
 
 func (r Result[V]) Switch() switchOption {
-	return r.err != nil
+	return r.err == nil
 }
 
 //func (r Result[V]) Separate() (v V, err *Error) {
