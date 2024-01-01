@@ -74,7 +74,19 @@ func (r Result[V]) UnwrapOrElse(fn func(err Error) V) V {
 	return *r.value
 }
 
-func (r Result[V]) UnwrapOrDefault() V {
+func (r Result[V]) UnwrapOrDefault() (v V) {
+	if r.err != nil {
+		return v
+	}
+
+	return *r.value
+}
+
+func (r Result[V]) UnwrapOr(v V) V {
+	if r.err != nil {
+		return v
+	}
+
 	return *r.value
 }
 
