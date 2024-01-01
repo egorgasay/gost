@@ -19,6 +19,10 @@ func NewError(baseCode int, extendedCode int, message string) *Error {
 	}
 }
 
+func NewErrorUnknown(message string) *Error {
+	return NewError(0, 0, message)
+}
+
 func (e *Error) Error() string {
 	return fmt.Sprintf("%d %d %s", e.baseCode, e.extendedCode, e.message)
 }

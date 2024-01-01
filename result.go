@@ -38,6 +38,18 @@ func (Result[V]) Err(err *Error) Result[V] {
 	}
 }
 
+func (Result[V]) ErrNew(code, extCode int, msg string) Result[V] {
+	return Result[V]{
+		err: NewError(code, extCode, msg),
+	}
+}
+
+func (Result[V]) ErrNewUnknown(msg string) Result[V] {
+	return Result[V]{
+		err: NewErrorUnknown(msg),
+	}
+}
+
 func (r Result[V]) Unwrap() V {
 	if r.err != nil {
 		panic(r.err)
