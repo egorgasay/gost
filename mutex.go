@@ -138,3 +138,7 @@ func (m *RwLock[V]) WReturn(v V) {
 	m.v = v
 	m.mu.Unlock()
 }
+
+func (m *RwLock[V]) WRelease() {
+	m.mu.Unlock()
+}
