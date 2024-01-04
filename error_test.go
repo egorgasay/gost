@@ -13,7 +13,7 @@ func TestError_WrapWithMessage(t *testing.T) {
 
 	e = e.WrapNotNilMsg("test")
 
-	if e.Message() != "3: test" {
+	if e.Message() != "test: 3" {
 		t.Fatal("unexpected error:", e)
 	}
 
