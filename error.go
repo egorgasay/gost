@@ -35,6 +35,15 @@ func (e *Error) ExtendedCode() int {
 	return e.extendedCode
 }
 
+func (e *Error) WrapNotNilMsg(message string) *Error {
+	if e != nil {
+		e.message = fmt.Sprintf("%s: %s", e.message, message)
+		return e
+	}
+
+	return nil
+}
+
 func (e *Error) Message() string {
 	return e.message
 }

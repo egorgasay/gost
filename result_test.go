@@ -22,7 +22,7 @@ func TestResult(t *testing.T) {
 		t.Fatal("unexpected error:", res)
 	}
 
-	f = func() gost.ResultN {
+	_ = func() gost.ResultN {
 		return gost.ErrN(gost.NewError(1, 2, "test"))
 	}
 }
