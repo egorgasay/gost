@@ -104,7 +104,13 @@ func (m *Mutex[V]) SetWithLock(fn func(v V) V) {
 	m.v = fn(m.v)
 }
 
-func (m *RwLock[V]) SetWithLock(fn func(v V) V) {
+func (m *RwLock[V]) SetWithLock(v V) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.v = v
+}
+
+func (m *RwLock[V]) WithLock(fn func(v V) V) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.v = fn(m.v)
