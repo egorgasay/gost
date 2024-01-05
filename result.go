@@ -159,12 +159,6 @@ func (r ResultN) Switch() switchOption {
 	return r.err == nil
 }
 
-func (*ResultN) Result() {
-}
-
-func (*Result[V]) Result() {
-}
-
 //func (r Result[V]) Separate() (v V, err *Error) {
 //	if r.value == nil {
 //		return v, r.err
