@@ -84,3 +84,11 @@ func (e *Error) IfNotErr(fn func() *Error) *Error {
 
 	return fn()
 }
+
+func (e *Error) IntoStd() error {
+	if e == nil {
+		return nil
+	}
+
+	return e
+}
