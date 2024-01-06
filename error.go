@@ -68,3 +68,19 @@ func (e *Error) UnmarshalJSON(data []byte) error {
 
 	return nil
 }
+
+func (e *Error) IfErr(fn func(err *Error) *Error) *Error {
+	if e == nil {
+		return nil
+	}
+
+	return fn(e)
+}
+
+func (e *Error) IfNotErr(fn func() *Error) *Error {
+	if e != nil {
+		return e
+	}
+
+	return fn()
+}
