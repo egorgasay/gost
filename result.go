@@ -5,7 +5,9 @@ type Result[V any] struct {
 	value *V
 }
 
-type ResultN Result[Nothing]
+type ResultN struct {
+	Result[Nothing]
+}
 
 type Nothing struct{}
 
@@ -29,7 +31,7 @@ func Err[V any](err *Error) Result[V] {
 }
 
 func ErrN(err *Error) ResultN {
-	return ResultN{err: err}
+	return ResultN{Result[Nothing]{err: err}}
 }
 
 func (Result[V]) Ok(value V) Result[V] {

@@ -1,8 +1,9 @@
 package gost_test
 
 import (
-	"github.com/egorgasay/gost"
 	"testing"
+
+	"github.com/egorgasay/gost"
 )
 
 func TestResult(t *testing.T) {
@@ -24,5 +25,5 @@ func TestResult(t *testing.T) {
 
 	_ = func() gost.ResultN {
 		return gost.ErrN(gost.NewError(1, 2, "test"))
-	}
+	}().Error()
 }
