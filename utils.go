@@ -2,7 +2,7 @@ package gost
 
 import (
 	"context"
-	"errors"
+	"sync"
 )
 
 func CloneArray[S ~[]E, E any](s S) S {
@@ -16,37 +16,38 @@ func SafeDeref[T any](t *T) T {
 	return *t
 }
 
-func WithContextPool(ctx context.Context, fn func() error, pool chan struct{}, onStop ...func() error) (err error) {
-	ch := make(chan error, 1)
+func WithContextPool(ctx context.Context, fn func() error, pool chan struct{}, onStop ...func()) (err error) {
+	ch := make(chan struct{})
+
+	var (
+		once sync.Once
+		done = func() { close(ch) }
+	)
 
 	if len(onStop) > 0 {
-		defer func() {
-			errStop := onStop[0]()
-			if errStop != nil {
-				err = errors.Join(err, errStop)
-			}
-		}()
+		defer onStop[0]()
 	}
 
 	pool <- struct{}{}
 	go func() {
 		defer func() {
-			close(ch)
 			<-pool // Ensure that we release the resource in the pool
 		}()
 
-		ch <- fn()
+		err = fn()
+		once.Do(done)
 	}()
 
 	select {
-	case err = <-ch:
+	case <-ch:
 		return err
 	case <-ctx.Done():
+		once.Do(done)
 		return ctx.Err()
 	}
 }
 
-func WithContext(ctx context.Context, fn func() error, onStop ...func() error) (err error) {
+func WithContext(ctx context.Context, fn func() error, onStop ...func()) (err error) {
 	ch := make(chan struct{}, 1)
 	defer close(ch)
 	return WithContextPool(ctx, fn, ch, onStop...)

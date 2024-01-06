@@ -1,9 +1,10 @@
 package gost_test
 
 import (
-	"github.com/egorgasay/gost"
 	"testing"
 	"time"
+
+	"github.com/egorgasay/gost"
 )
 
 func TestMutexOk(t *testing.T) {
@@ -31,5 +32,13 @@ func TestMutexErr(t *testing.T) {
 	err := protected.TryBorrow().Error()
 	if err != gost.ErrMutexIsLocked {
 		t.Fatal("unexpected error:", err)
+	}
+}
+
+func TestSecureMutex(t *testing.T) {
+	var prot = gost.NewSecureMutex[int]().Set(2).Lock()
+
+	if prot.Unlock().Value().Read() != 2 {
+		t.Fatal()
 	}
 }

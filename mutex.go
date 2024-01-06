@@ -32,6 +32,15 @@ func (m SecureMutexUnlocked[V]) Lock() SecureMutexLocked[V] {
 	}
 }
 
+func (m SecureMutexUnlocked[V]) Set(v V) SecureMutexUnlocked[V] {
+	m.v = v
+	return m
+}
+
+func (m SecureMutexUnlocked[V]) Value() Arc[*V, V] {
+	return NewArc(&m.v)
+}
+
 func (m SecureMutexLocked[V]) Unlock() SecureMutexUnlocked[V] {
 	m.mu.Unlock()
 	return SecureMutexUnlocked[V]{
@@ -40,7 +49,13 @@ func (m SecureMutexLocked[V]) Unlock() SecureMutexUnlocked[V] {
 	}
 }
 
-func NewSecureMutex[V any](v V) SecureMutexUnlocked[V] {
+func NewSecureMutex[V any]() SecureMutexUnlocked[V] {
+	return SecureMutexUnlocked[V]{
+		mu: &sync.Mutex{},
+	}
+}
+
+func NewSecureMutexV[V any](v V) SecureMutexUnlocked[V] {
 	return SecureMutexUnlocked[V]{
 		mu: &sync.Mutex{},
 		v:  v,
@@ -119,6 +134,12 @@ func (m *RwLock[V]) WithLock(fn func(v V) V) {
 func (m *RwLock[V]) RBorrow() Arc[*V, V] {
 	m.mu.RLock()
 	return NewArc(&m.v)
+}
+
+func (m *RwLock[V]) ReadAndRelease() V {
+	v := m.v
+	m.mu.RUnlock()
+	return v
 }
 
 func (m *RwLock[V]) RTryBorrow() Result[V] {
