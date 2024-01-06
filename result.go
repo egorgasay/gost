@@ -5,9 +5,7 @@ type Result[V any] struct {
 	value *V
 }
 
-type ResultN struct {
-	err *Error
-}
+type ResultN Result[Nothing]
 
 type Nothing struct{}
 
@@ -50,32 +48,14 @@ func (Result[V]) Err(err *Error) Result[V] {
 	}
 }
 
-func (ResultN) Err(err *Error) ResultN {
-	return ResultN{
-		err: err,
-	}
-}
-
 func (Result[V]) ErrNew(code, extCode int, msg string) Result[V] {
 	return Result[V]{
 		err: NewError(code, extCode, msg),
 	}
 }
 
-func (ResultN) ErrNew(code, extCode int, msg string) ResultN {
-	return ResultN{
-		err: NewError(code, extCode, msg),
-	}
-}
-
 func (Result[V]) ErrNewUnknown(msg string) Result[V] {
 	return Result[V]{
-		err: NewErrorUnknown(msg),
-	}
-}
-
-func (ResultN) ErrNewUnknown(msg string) ResultN {
-	return ResultN{
 		err: NewErrorUnknown(msg),
 	}
 }
@@ -132,18 +112,6 @@ func (r Result[V]) IsErr() bool {
 	return r.err != nil
 }
 
-func (r ResultN) Error() *Error {
-	return r.err
-}
-
-func (r ResultN) IsOk() bool {
-	return r.err == nil
-}
-
-func (r ResultN) IsErr() bool {
-	return r.err != nil
-}
-
 type switchOption bool
 
 const (
@@ -155,19 +123,7 @@ func (r Result[V]) Switch() switchOption {
 	return r.err == nil
 }
 
-func (r ResultN) Switch() switchOption {
-	return r.err == nil
-}
-
 func (r Result[V]) ErrorStd() error {
-	if r.err == nil {
-		return nil
-	}
-
-	return r.err
-}
-
-func (r ResultN) ErrorStd() error {
 	if r.err == nil {
 		return nil
 	}
