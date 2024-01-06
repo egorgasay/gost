@@ -159,6 +159,22 @@ func (r ResultN) Switch() switchOption {
 	return r.err == nil
 }
 
+func (r Result[V]) ErrorStd() error {
+	if r.err == nil {
+		return nil
+	}
+
+	return r.err
+}
+
+func (r ResultN) ErrorStd() error {
+	if r.err == nil {
+		return nil
+	}
+
+	return r.err
+}
+
 //func (r Result[V]) Separate() (v V, err *Error) {
 //	if r.value == nil {
 //		return v, r.err
