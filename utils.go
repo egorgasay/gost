@@ -17,12 +17,9 @@ func SafeDeref[T any](t *T) T {
 }
 
 func WithContextPool(ctx context.Context, fn func() error, pool chan struct{}, onStop ...func()) (err error) {
-	ch := make(chan struct{})
+	ch := make(chan error, 1)
 
-	var (
-		once sync.Once
-		done = func() { close(ch) }
-	)
+	var once sync.Once
 
 	if len(onStop) > 0 {
 		defer onStop[0]()
@@ -34,15 +31,19 @@ func WithContextPool(ctx context.Context, fn func() error, pool chan struct{}, o
 			<-pool // Ensure that we release the resource in the pool
 		}()
 
-		err = fn()
-		once.Do(done)
+		once.Do(func() {
+			ch <- fn()
+			close(ch)
+		})
 	}()
 
 	select {
-	case <-ch:
+	case err := <-ch:
 		return err
 	case <-ctx.Done():
-		once.Do(done)
+		once.Do(func() {
+			close(ch)
+		})
 		return ctx.Err()
 	}
 }
