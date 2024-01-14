@@ -3,6 +3,7 @@ package gost
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 type Error struct {
@@ -177,7 +178,7 @@ func NewErrX(code int, message ...string) ErrX {
 	}
 
 	if len(message) == 0 {
-		message = unknownErr
+		message = []string{""}
 	}
 
 	return err
@@ -185,22 +186,105 @@ func NewErrX(code int, message ...string) ErrX {
 
 var Nil = ErrX{baseCode: nil}
 
-var unknownErr = []string{""}
-
-func (b ErrX) Extend(extCode int, message ...string) ErrX {
+func (b ErrX) Extend(extCode int, messages ...string) ErrX {
 	if !b.IsErr() {
 		return b
 	}
 
-	if len(message) == 0 {
-		message = unknownErr
+	var message string
+
+	if len(messages) > 0 {
+		message = strings.Join(messages, ", ")
 	}
 
 	return ErrX{
 		baseCode: b.baseCode,
 		extCodes: append(b.extCodes, extCode),
-		messages: append(b.messages, message...),
+		messages: append(b.messages, message),
 	}
+}
+
+func (b ErrX) ExtendMsg(message string, messages ...string) ErrX {
+	if !b.IsErr() {
+		return b
+	}
+
+	if len(messages) > 0 {
+		message += fmt.Sprintf("; %s", strings.Join(messages, ", "))
+	}
+
+	return ErrX{
+		baseCode: b.baseCode,
+		extCodes: append(b.extCodes, 0),
+		messages: append(b.messages, message),
+	}
+}
+
+type extendedCode struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
+type errXJSON struct {
+	BaseCode      int            `json:"base_code"`
+	Message       string         `json:"message"`
+	ExtendedCodes []extendedCode `json:"extended_codes"`
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+// Example:
+//
+//		{
+//			"base_code": 1,
+//			"message": "Not found",
+//			"extended_codes": [
+//				{
+//					"code": 234,
+//					"message": "Order"
+//				},
+//				{
+//					"code": 0,
+//					"message": "can't find order"
+//				}
+//			],
+//	}
+func (e ErrX) MarshalJSON() ([]byte, error) {
+	if !e.IsErr() {
+		return []byte("null"), nil
+	}
+
+	// Create the JSON structure using the fields from ErrX.
+	baseCode := 0
+	if e.baseCode != nil {
+		baseCode = *e.baseCode
+	}
+
+	message := "Unknown error"
+	if len(e.messages) > 0 {
+		message = e.messages[0]
+		e.messages = e.messages[1:]
+	}
+
+	extendedCodes := make([]extendedCode, len(e.extCodes))
+	for i, code := range e.extCodes {
+		extendedMessage := "Unknown error"
+		if i < len(e.messages) {
+			extendedMessage = e.messages[i]
+		}
+		extendedCodes[i] = extendedCode{
+			Code:    code,
+			Message: extendedMessage,
+		}
+	}
+
+	// Marshal the JSON structure.
+	errX := errXJSON{
+		BaseCode:      baseCode,
+		Message:       message,
+		ExtendedCodes: extendedCodes,
+	}
+
+	return json.Marshal(errX)
 }
 
 func (b ErrX) Join(err ErrX) ErrX {
@@ -260,7 +344,7 @@ func (x ErrX) Error() string {
 	}
 
 	for i := 0; i < len(x.extCodes) || i < len(x.messages); i++ {
-		message += ", "
+		message += "; "
 
 		if i < len(x.extCodes) {
 			message += fmt.Sprintf("%d: ", x.extCodes[i])
