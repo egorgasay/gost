@@ -149,17 +149,17 @@ func (e *Error) Is(target *Error) bool {
 }
 
 type ErrX struct {
-	baseCode *int
+	baseCode int
 	extCodes []int
 	messages []string
 }
 
-func (b ErrX) BaseCode() int {
-	if b.baseCode == nil {
+func (b *ErrX) BaseCode() int {
+	if b == nil {
 		panic("base code is nil")
 	}
 
-	return *b.baseCode
+	return b.baseCode
 }
 
 func (b ErrX) ExtCodes() []int {
@@ -170,9 +170,9 @@ func (b ErrX) Messages() []string {
 	return b.messages
 }
 
-func NewErrX(code int, message ...string) ErrX {
+func NewErrX(code int, message ...string) *ErrX {
 	err := ErrX{
-		baseCode: &code,
+		baseCode: code,
 		extCodes: make([]int, 0),
 		messages: message,
 	}
@@ -181,14 +181,14 @@ func NewErrX(code int, message ...string) ErrX {
 		message = []string{""}
 	}
 
-	return err
+	return &err
 }
 
-var Nil = ErrX{baseCode: nil}
+//var Nil = ErrX{baseCode: nil}
 
-func (b ErrX) Extend(extCode int, messages ...string) ErrX {
-	if !b.IsErr() {
-		return b
+func (b *ErrX) Extend(extCode int, messages ...string) *ErrX {
+	if b == nil {
+		return nil
 	}
 
 	var message string
@@ -197,23 +197,23 @@ func (b ErrX) Extend(extCode int, messages ...string) ErrX {
 		message = strings.Join(messages, ", ")
 	}
 
-	return ErrX{
+	return &ErrX{
 		baseCode: b.baseCode,
 		extCodes: append(b.extCodes, extCode),
 		messages: append(b.messages, message),
 	}
 }
 
-func (b ErrX) ExtendMsg(message string, messages ...string) ErrX {
-	if !b.IsErr() {
-		return b
+func (b *ErrX) ExtendMsg(message string, messages ...string) *ErrX {
+	if b == nil {
+		return nil
 	}
 
 	if len(messages) > 0 {
 		message += fmt.Sprintf("; %s", strings.Join(messages, ", "))
 	}
 
-	return ErrX{
+	return &ErrX{
 		baseCode: b.baseCode,
 		extCodes: append(b.extCodes, 0),
 		messages: append(b.messages, message),
@@ -248,17 +248,13 @@ type errXJSON struct {
 //				}
 //			],
 //	}
-func (e ErrX) MarshalJSON() ([]byte, error) {
-	if !e.IsErr() {
+func (e *ErrX) MarshalJSON() ([]byte, error) {
+	if e == nil {
 		return []byte("null"), nil
 	}
 
 	// Create the JSON structure using the fields from ErrX.
-	baseCode := 0
-	if e.baseCode != nil {
-		baseCode = *e.baseCode
-	}
-
+	baseCode := e.baseCode
 	message := "Unknown error"
 	if len(e.messages) > 0 {
 		message = e.messages[0]
@@ -287,35 +283,28 @@ func (e ErrX) MarshalJSON() ([]byte, error) {
 	return json.Marshal(errX)
 }
 
-func (b ErrX) Join(err ErrX) ErrX {
-	if !b.IsErr() {
-		return b
+func (b *ErrX) Join(err *ErrX) *ErrX {
+	if b == nil {
+		return nil
 	}
 
-	if !err.IsErr() {
-		return b
-	}
-
-	return ErrX{
+	return &ErrX{
+		baseCode: b.baseCode,
 		extCodes: append(b.extCodes, err.extCodes...),
 		messages: append(b.messages, err.messages...),
 	}
 }
 
-func (b ErrX) IsErr() bool {
-	return b.baseCode != nil
-}
-
-func (x ErrX) CmpBase(code int) bool {
-	if x.baseCode == nil {
+func (x *ErrX) CmpBase(code int) bool {
+	if x == nil {
 		return false
 	}
 
-	return *x.baseCode == code
+	return x.baseCode == code
 }
 
-func (x ErrX) CmpExt(code int) bool {
-	if x.baseCode == nil {
+func (x *ErrX) CmpExt(code int) bool {
+	if x == nil {
 		return false
 	}
 
@@ -332,12 +321,12 @@ func (x ErrX) CmpExt(code int) bool {
 // Example:
 // fmt.Println(newErr(_notFound, "not found").Extend(_order).Extend(134, "test").Error())
 // OUT: 404: "not found", 1000: , 134: "test"
-func (x ErrX) Error() string {
-	if x.baseCode == nil {
+func (x *ErrX) Error() string {
+	if x == nil {
 		panic("not an error")
 	}
 
-	var message = fmt.Sprintf("%d: %s", *x.baseCode, x.messages[0])
+	var message = fmt.Sprintf("%d: %s", x.baseCode, x.messages[0])
 
 	if len(x.messages) > 0 {
 		x.messages = x.messages[1:]

@@ -8,12 +8,12 @@ import (
 	"github.com/egorgasay/gost"
 )
 
-func will() gost.ErrX {
+func will() *gost.ErrX {
 	return gost.NewErrX(_notFound)
 }
 
-func wont() gost.ErrX {
-	return gost.Nil
+func wont() *gost.ErrX {
+	return nil
 }
 
 const (
@@ -23,15 +23,15 @@ const (
 	_repository = 134
 )
 
-func x() gost.ErrX {
+func x() *gost.ErrX {
 	err := will().Extend(_order).Extend(_order, "test")
 
 	_ = err
 
-	return gost.Nil
+	return nil
 }
 
-func repository_DeleteOrder(id string) gost.ErrX {
+func repository_DeleteOrder(id string) *gost.ErrX {
 
 	// let's throw an error
 
@@ -39,7 +39,7 @@ func repository_DeleteOrder(id string) gost.ErrX {
 		Extend(_order, "order") // we can extend it!
 }
 
-func usecase_DeleteOrder(id string) gost.ErrX {
+func usecase_DeleteOrder(id string) *gost.ErrX {
 	if err := repository_DeleteOrder(id); err.IsErr() {
 		if err.BaseCode() == _unknown {
 			err = err.Extend(_repository, "problem in repository") // another extend
@@ -47,7 +47,7 @@ func usecase_DeleteOrder(id string) gost.ErrX {
 		return err.ExtendMsg("cannot delete order")
 	}
 
-	return gost.Nil
+	return nil
 }
 
 func http_FindOrder(w http.ResponseWriter, r *http.Request) {
@@ -63,7 +63,7 @@ func http_FindOrder(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func http_handleErrX(w http.ResponseWriter, err gost.ErrX) {
+func http_handleErrX(w http.ResponseWriter, err *gost.ErrX) {
 	switch err.BaseCode() {
 	case _notFound:
 		if err.CmpExt(_order) {
