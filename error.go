@@ -152,22 +152,23 @@ type ErrX struct {
 	baseCode int
 	extCodes []int
 	messages []string
+	unwrap   []error
 }
 
-func (b *ErrX) BaseCode() int {
-	if b == nil {
+func (x *ErrX) BaseCode() int {
+	if x == nil {
 		panic("base code is nil")
 	}
 
-	return b.baseCode
+	return x.baseCode
 }
 
-func (b ErrX) ExtCodes() []int {
-	return b.extCodes
+func (x ErrX) ExtCodes() []int {
+	return x.extCodes
 }
 
-func (b ErrX) Messages() []string {
-	return b.messages
+func (x ErrX) Messages() []string {
+	return x.messages
 }
 
 func NewErrX(code int, message ...string) *ErrX {
@@ -175,6 +176,7 @@ func NewErrX(code int, message ...string) *ErrX {
 		baseCode: code,
 		extCodes: make([]int, 0),
 		messages: message,
+		unwrap:   make([]error, 0), // TODO:
 	}
 
 	if len(message) == 0 {
@@ -186,8 +188,8 @@ func NewErrX(code int, message ...string) *ErrX {
 
 //var Nil = ErrX{baseCode: nil}
 
-func (b *ErrX) Extend(extCode int, messages ...string) *ErrX {
-	if b == nil {
+func (x *ErrX) Extend(extCode int, messages ...string) *ErrX {
+	if x == nil {
 		return nil
 	}
 
@@ -197,15 +199,18 @@ func (b *ErrX) Extend(extCode int, messages ...string) *ErrX {
 		message = strings.Join(messages, ", ")
 	}
 
-	return &ErrX{
-		baseCode: b.baseCode,
-		extCodes: append(b.extCodes, extCode),
-		messages: append(b.messages, message),
-	}
+	x.extCodes = append(x.extCodes, extCode)
+	x.messages = append(x.messages, message)
+
+	return x
 }
 
-func (b *ErrX) ExtendMsg(message string, messages ...string) *ErrX {
-	if b == nil {
+func (x *ErrX) Unwrap() error {
+	return x
+}
+
+func (x *ErrX) ExtendMsg(message string, messages ...string) *ErrX {
+	if x == nil {
 		return nil
 	}
 
@@ -213,10 +218,8 @@ func (b *ErrX) ExtendMsg(message string, messages ...string) *ErrX {
 		message += fmt.Sprintf("; %s", strings.Join(messages, ", "))
 	}
 
-	return &ErrX{
-		baseCode: b.baseCode,
-		extCodes: append(b.extCodes, 0),
-		messages: append(b.messages, message),
+	x.extCodes = append(x.extCodes, 0),
+		messages: append(x.messages, message),
 	}
 }
 
@@ -248,24 +251,24 @@ type errXJSON struct {
 //				}
 //			],
 //	}
-func (e *ErrX) MarshalJSON() ([]byte, error) {
-	if e == nil {
+func (x *ErrX) MarshalJSON() ([]byte, error) {
+	if x == nil {
 		return []byte("null"), nil
 	}
 
 	// Create the JSON structure using the fields from ErrX.
-	baseCode := e.baseCode
+	baseCode := x.baseCode
 	message := "Unknown error"
-	if len(e.messages) > 0 {
-		message = e.messages[0]
-		e.messages = e.messages[1:]
+	if len(x.messages) > 0 {
+		message = x.messages[0]
+		x.messages = x.messages[1:]
 	}
 
-	extendedCodes := make([]extendedCode, len(e.extCodes))
-	for i, code := range e.extCodes {
+	extendedCodes := make([]extendedCode, len(x.extCodes))
+	for i, code := range x.extCodes {
 		extendedMessage := "Unknown error"
-		if i < len(e.messages) {
-			extendedMessage = e.messages[i]
+		if i < len(x.messages) {
+			extendedMessage = x.messages[i]
 		}
 		extendedCodes[i] = extendedCode{
 			Code:    code,
@@ -283,15 +286,16 @@ func (e *ErrX) MarshalJSON() ([]byte, error) {
 	return json.Marshal(errX)
 }
 
-func (b *ErrX) Join(err *ErrX) *ErrX {
-	if b == nil {
+func (x *ErrX) Join(err *ErrX) *ErrX {
+	if x == nil {
 		return nil
 	}
 
 	return &ErrX{
-		baseCode: b.baseCode,
-		extCodes: append(b.extCodes, err.extCodes...),
-		messages: append(b.messages, err.messages...),
+		baseCode: x.baseCode,
+		extCodes: append(x.extCodes, err.extCodes...),
+		messages: append(x.messages, err.messages...),
+		unwrap:   append(x.unwrap, err),
 	}
 }
 

@@ -40,7 +40,7 @@ func repository_DeleteOrder(id string) *gost.ErrX {
 }
 
 func usecase_DeleteOrder(id string) *gost.ErrX {
-	if err := repository_DeleteOrder(id); err.IsErr() {
+	if err := repository_DeleteOrder(id); err != nil {
 		if err.BaseCode() == _unknown {
 			err = err.Extend(_repository, "problem in repository") // another extend
 		}
@@ -53,7 +53,7 @@ func usecase_DeleteOrder(id string) *gost.ErrX {
 func http_FindOrder(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 
-	if err := usecase_DeleteOrder(id); err.IsErr() {
+	if err := usecase_DeleteOrder(id); err != nil {
 		http_handleErrX(w, err)
 	} else {
 		w.WriteHeader(200)
@@ -85,7 +85,7 @@ func TestErrXError(t *testing.T) {
 
 	got := gost.NewErrX(_notFound, "not found").Extend(_order).Extend(134, "test")
 
-	if !got.IsErr() {
+	if got != nil {
 		t.Fatalf("want error, got no %v", got)
 	}
 
