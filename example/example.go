@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/egorgasay/gost"
 	"strconv"
+
+	"github.com/egorgasay/gost"
 )
 
 const (

@@ -317,6 +317,17 @@ func (x *ErrX) CmpExt(code int) bool {
 	return false
 }
 
+func (x *ErrX) AsMessage(err error) *ErrX {
+	if x == nil {
+		return nil
+	}
+
+	x.extCodes = append(x.extCodes, 0)
+	x.messages = append(x.messages, err.Error())
+
+	return x
+}
+
 // Error
 // Example:
 // fmt.Println(newErr(_notFound, "not found").Extend(_order).Extend(134, "test").Error())
