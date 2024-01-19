@@ -2,6 +2,7 @@ package gost
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -155,6 +156,21 @@ type ErrX struct {
 	unwrap   []error
 }
 
+func NewErrX(code int, message ...string) *ErrX {
+	err := ErrX{
+		baseCode: code,
+		extCodes: make([]int, 0),
+		messages: message,
+		unwrap:   make([]error, 0), // TODO:
+	}
+
+	if len(message) == 0 {
+		message = []string{""}
+	}
+
+	return &err
+}
+
 func (x *ErrX) BaseCode() int {
 	if x == nil {
 		panic("base code is nil")
@@ -169,21 +185,6 @@ func (x ErrX) ExtCodes() []int {
 
 func (x ErrX) Messages() []string {
 	return x.messages
-}
-
-func NewErrX(code int, message ...string) *ErrX {
-	err := ErrX{
-		baseCode: code,
-		extCodes: make([]int, 0),
-		messages: message,
-		unwrap:   make([]error, 0), // TODO:
-	}
-
-	if len(message) == 0 {
-		message = []string{""}
-	}
-
-	return &err
 }
 
 //var Nil = ErrX{baseCode: nil}
@@ -201,12 +202,39 @@ func (x *ErrX) Extend(extCode int, messages ...string) *ErrX {
 
 	x.extCodes = append(x.extCodes, extCode)
 	x.messages = append(x.messages, message)
+	//x.unwrap = append(x.unwrap, x)
 
 	return x
 }
 
-func (x *ErrX) Unwrap() error {
-	return x
+func (x *ErrX) Is(target error) bool {
+	if x == nil {
+		return false
+	}
+
+	var errX *ErrX
+	if !errors.As(target, &errX) {
+		return false
+	}
+
+	if x.baseCode != errX.baseCode {
+		return false
+	}
+
+	if len(x.messages) != len(errX.messages) || len(x.extCodes) != len(errX.extCodes) {
+		return false
+	}
+
+	if len(x.extCodes) == 0 {
+		return x.messages[0] == errX.messages[0]
+	}
+
+	for i := range x.messages {
+		if x.messages[i] != errX.messages[i] || x.extCodes[i] != errX.extCodes[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func (x *ErrX) ExtendMsg(message string, messages ...string) *ErrX {
@@ -218,9 +246,11 @@ func (x *ErrX) ExtendMsg(message string, messages ...string) *ErrX {
 		message += fmt.Sprintf("; %s", strings.Join(messages, ", "))
 	}
 
-	x.extCodes = append(x.extCodes, 0),
-		messages: append(x.messages, message),
-	}
+	x.extCodes = append(x.extCodes, 0)
+	x.messages = append(x.messages, message)
+	x.unwrap = append(x.unwrap, x)
+
+	return x
 }
 
 type extendedCode struct {
@@ -286,18 +316,17 @@ func (x *ErrX) MarshalJSON() ([]byte, error) {
 	return json.Marshal(errX)
 }
 
-func (x *ErrX) Join(err *ErrX) *ErrX {
-	if x == nil {
-		return nil
-	}
-
-	return &ErrX{
-		baseCode: x.baseCode,
-		extCodes: append(x.extCodes, err.extCodes...),
-		messages: append(x.messages, err.messages...),
-		unwrap:   append(x.unwrap, err),
-	}
-}
+//func (x *ErrX) Join(err *ErrX) *ErrX {
+//	if x == nil {
+//		return nil
+//	}
+//
+//	x.extCodes = append(x.extCodes, 0)
+//	x.messages = append(x.messages, err.messages...)
+//	x.unwrap = append(x.unwrap, err.unwrap...)
+//
+//	return x
+//}
 
 func (x *ErrX) CmpBase(code int) bool {
 	if x == nil {

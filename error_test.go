@@ -2,6 +2,7 @@ package gost
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 )
 
@@ -45,4 +46,62 @@ func TestErrorIs(t *testing.T) {
 	//if fourthErr.Is(nil) {
 	//	t.Fatal("unexpected error:", fourthErr)
 	//}
+}
+
+func TestErrXIs(t *testing.T) {
+	var cases = []struct {
+		name  string
+		build func() (err error, target error)
+	}{
+		{"same", func() (err error, target error) {
+			err1 := NewErrX(1, "3")
+
+			return err1, err1
+		}},
+		{"extWith_ExtendMsg", func() (err error, target error) {
+			err1 := NewErrX(1, "3")
+
+			return err1, err1.ExtendMsg("12")
+		}},
+		{"extWith_Extend", func() (err error, target error) {
+			err1 := NewErrX(1, "3")
+
+			return err1, err1.Extend(2, "12")
+		}},
+		{"extWith_Extend2", func() (err error, target error) {
+			err1 := NewErrX(1, "3")
+
+			return err1, err1.
+				Extend(2, "12").
+				Extend(3, "13").
+				Extend(4, "14").
+				Extend(5, "15")
+		}},
+		{"extWith_Extend_fmt_Errorf", func() (err error, target error) {
+			err1 := NewErrX(1, "3")
+
+			return err1, fmt.Errorf("%w: %s", err1.Extend(2, "12"), err1)
+		}},
+		{"extWith_Extend_errors_Join", func() (err error, target error) {
+			err1 := NewErrX(1, "3")
+			err2 := NewErrX(2, "4")
+
+			return err1, errors.Join(err1, err2)
+		}},
+		{"extWith_Extend_errors_Join#2", func() (err error, target error) {
+			err1 := NewErrX(1, "3")
+			err2 := NewErrX(2, "4").Extend(3, "5")
+
+			return err1, errors.Join(err1, err2)
+		}},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			err, target := c.build()
+			if !errors.Is(err, target) {
+				t.Fatal("unexpected error:", err)
+			}
+		})
+	}
 }
