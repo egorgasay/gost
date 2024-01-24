@@ -62,7 +62,7 @@ func (e *Error) Message() string {
 	return e.message
 }
 
-func (e Error) MarshalJSON() ([]byte, error) {
+func (e Error) MarshalJSON() ([]byte, error) { // TODO: inner errors
 	return []byte(fmt.Sprintf(`{"base_code":%d,"extended_code":%d,"message":"%s"}`, e.baseCode, e.extendedCode, e.message)), nil
 }
 
@@ -243,12 +243,11 @@ func (x *ErrX) ExtendMsg(message string, messages ...string) *ErrX {
 	}
 
 	if len(messages) > 0 {
-		message += fmt.Sprintf("; %s", strings.Join(messages, ", "))
+		message = fmt.Sprintf("%s; %s", message, strings.Join(messages, ", "))
 	}
 
 	x.extCodes = append(x.extCodes, 0)
 	x.messages = append(x.messages, message)
-	x.unwrap = append(x.unwrap, x)
 
 	return x
 }
