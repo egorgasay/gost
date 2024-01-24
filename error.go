@@ -151,21 +151,23 @@ func (e *Error) Is(target *Error) bool {
 
 type ErrX struct {
 	baseCode int
-	extCodes []int
-	messages []string
-	unwrap   []error
+	extCode  int
+	message  string
+	parent   *ErrX
 }
+
+const (
+	ErrXSeparator        = ";;"
+	ErrXMessageSeparator = " : "
+)
 
 func NewErrX(code int, message ...string) *ErrX {
 	err := ErrX{
 		baseCode: code,
-		extCodes: make([]int, 0),
-		messages: message,
-		unwrap:   make([]error, 0), // TODO:
 	}
 
-	if len(message) == 0 {
-		message = []string{""}
+	if len(message) > 0 {
+		err.message = strings.Join(message, ErrXMessageSeparator)
 	}
 
 	return &err
@@ -179,12 +181,12 @@ func (x *ErrX) BaseCode() int {
 	return x.baseCode
 }
 
-func (x ErrX) ExtCodes() []int {
-	return x.extCodes
+func (x ErrX) ExtCode() int {
+	return x.extCode
 }
 
-func (x ErrX) Messages() []string {
-	return x.messages
+func (x ErrX) Message() string {
+	return x.message
 }
 
 //var Nil = ErrX{baseCode: nil}
@@ -194,17 +196,19 @@ func (x *ErrX) Extend(extCode int, messages ...string) *ErrX {
 		return nil
 	}
 
-	var message string
-
-	if len(messages) > 0 {
-		message = strings.Join(messages, ", ")
+	err := ErrX{
+		baseCode: x.baseCode,
+		extCode:  extCode,
+		parent:   x,
 	}
 
-	x.extCodes = append(x.extCodes, extCode)
-	x.messages = append(x.messages, message)
-	//x.unwrap = append(x.unwrap, x)
+	if len(messages) == 1 {
+		err.message = messages[0]
+	} else if len(messages) > 0 {
+		err.message = strings.Join(messages, ErrXMessageSeparator)
+	}
 
-	return x
+	return &err
 }
 
 func (x *ErrX) Is(target error) bool {
@@ -217,23 +221,22 @@ func (x *ErrX) Is(target error) bool {
 		return false
 	}
 
-	if x.baseCode != errX.baseCode {
+	return x.IsX(errX)
+}
+
+func (x *ErrX) IsX(targetX *ErrX) bool {
+	if x.baseCode != targetX.baseCode {
 		return false
 	}
 
-	if len(x.messages) != len(errX.messages) || len(x.extCodes) != len(errX.extCodes) {
-		return false
-	}
-
-	if len(x.extCodes) == 0 {
-		return x.messages[0] == errX.messages[0]
-	}
-
-	for i := range x.messages {
-		if x.messages[i] != errX.messages[i] || x.extCodes[i] != errX.extCodes[i] {
+	if x.extCode != targetX.extCode {
+		if x.parent == nil {
 			return false
 		}
+
+		return x.parent.Is(targetX)
 	}
+
 	return true
 }
 
@@ -243,73 +246,44 @@ func (x *ErrX) ExtendMsg(message string, messages ...string) *ErrX {
 	}
 
 	if len(messages) > 0 {
-		message = fmt.Sprintf("%s; %s", message, strings.Join(messages, ", "))
+		message = fmt.Sprintf("%s %s%s%s", message, ErrXMessageSeparator, strings.Join(messages, ErrXMessageSeparator), ErrXSeparator)
 	}
 
-	x.extCodes = append(x.extCodes, 0)
-	x.messages = append(x.messages, message)
-
-	return x
-}
-
-type extendedCode struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
+	return x.Extend(0, message)
 }
 
 type errXJSON struct {
-	BaseCode      int            `json:"base_code"`
-	Message       string         `json:"message"`
-	ExtendedCodes []extendedCode `json:"extended_codes"`
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Parent  *ErrX  `json:"parent,omitempty"`
 }
 
 // MarshalJSON implements the json.Marshaler interface.
 // Example:
 //
-//		{
-//			"base_code": 1,
-//			"message": "Not found",
-//			"extended_codes": [
-//				{
-//					"code": 234,
-//					"message": "Order"
-//				},
-//				{
-//					"code": 0,
-//					"message": "can't find order"
-//				}
-//			],
+//	{
+//		"code": 12,
+//		"message": "Order",
+//		"parent": [
+//			{
+//				"code": 1,
+//				"message": "Not found",
+//			}
+//		],
 //	}
 func (x *ErrX) MarshalJSON() ([]byte, error) {
 	if x == nil {
 		return []byte("null"), nil
 	}
 
-	// Create the JSON structure using the fields from ErrX.
-	baseCode := x.baseCode
-	message := "Unknown error"
-	if len(x.messages) > 0 {
-		message = x.messages[0]
-		x.messages = x.messages[1:]
-	}
-
-	extendedCodes := make([]extendedCode, len(x.extCodes))
-	for i, code := range x.extCodes {
-		extendedMessage := "Unknown error"
-		if i < len(x.messages) {
-			extendedMessage = x.messages[i]
-		}
-		extendedCodes[i] = extendedCode{
-			Code:    code,
-			Message: extendedMessage,
-		}
-	}
-
-	// Marshal the JSON structure.
 	errX := errXJSON{
-		BaseCode:      baseCode,
-		Message:       message,
-		ExtendedCodes: extendedCodes,
+		Code:    x.baseCode,
+		Message: x.message,
+		Parent:  x.parent,
+	}
+
+	if x.extCode != 0 || x.parent != nil {
+		errX.Code = x.extCode
 	}
 
 	return json.Marshal(errX)
@@ -340,52 +314,55 @@ func (x *ErrX) CmpExt(code int) bool {
 		return false
 	}
 
-	for _, v := range x.extCodes {
-		if v == code {
-			return true
-		}
+	return x.extCode == code
+}
+
+func (x *ErrX) HasExt(code int) bool {
+	if x == nil {
+		return false
 	}
 
-	return false
+	if x.extCode != code {
+		if x.parent == nil {
+			return false
+		}
+
+		return x.parent.HasExt(code)
+	}
+
+	return x.extCode == code
 }
 
 func (x *ErrX) AsMessage(err error) *ErrX {
-	if x == nil {
+	if err == nil {
 		return nil
 	}
 
-	x.extCodes = append(x.extCodes, 0)
-	x.messages = append(x.messages, err.Error())
+	if x == nil {
+		return NewErrX(0, err.Error())
+	}
 
-	return x
+	return x.Extend(0, err.Error())
 }
 
 // Error
 // Example:
 // fmt.Println(newErr(_notFound, "not found").Extend(_order).Extend(134, "test").Error())
-// OUT: 404: "not found", 1000: , 134: "test"
+// OUT: 404: "not found";; 1000: ;; 134: "test"
 func (x *ErrX) Error() string {
 	if x == nil {
 		panic("not an error")
 	}
 
-	var message = fmt.Sprintf("%d: %s", x.baseCode, x.messages[0])
-
-	if len(x.messages) > 0 {
-		x.messages = x.messages[1:]
+	code := x.baseCode
+	if x.extCode != 0 {
+		code = x.extCode
 	}
 
-	for i := 0; i < len(x.extCodes) || i < len(x.messages); i++ {
-		message += "; "
-
-		if i < len(x.extCodes) {
-			message += fmt.Sprintf("%d: ", x.extCodes[i])
-		}
-
-		if i < len(x.messages) {
-			message += x.messages[i]
-		}
+	message := fmt.Sprintf("%d: %s", code, x.message)
+	if x.parent == nil {
+		return message
 	}
 
-	return message
+	return fmt.Sprintf("%s%s%s", x.parent.Error(), ErrXSeparator, message)
 }

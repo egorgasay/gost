@@ -81,11 +81,11 @@ func http_handleErrX(w http.ResponseWriter, err *gost.ErrX) {
 }
 
 func TestErrXError(t *testing.T) {
-	want := `404: not found; 1000: ; 134: test`
+	want := `404: not found;;1000: ;;134: test`
 
 	got := gost.NewErrX(_notFound, "not found").Extend(_order).Extend(134, "test")
 
-	if got != nil {
+	if got == nil {
 		t.Fatalf("want error, got no %v", got)
 	}
 
@@ -93,12 +93,12 @@ func TestErrXError(t *testing.T) {
 		t.Fatalf("wanted got.baseCode: %d, got: %d", _notFound, got.BaseCode())
 	}
 
-	if !got.CmpExt(_order) {
-		t.Fatalf("wanted got.extCode: %d, got: %d", _order, got.ExtCodes()[0])
+	if !got.HasExt(_order) {
+		t.Fatalf("wanted got.extCode: %d, got: %d", _order, got.ExtCode())
 	}
 
 	if !got.CmpExt(134) {
-		t.Fatalf("wanted got.extCode: %d, got: %d", 134, got.ExtCodes()[1])
+		t.Fatalf("wanted got.extCode: %d, got: %d", 134, got.ExtCode())
 	}
 
 	if got.CmpBase(14) {
@@ -114,18 +114,16 @@ func TestErrXError(t *testing.T) {
 
 func TestErrX_MarshalJSON(t *testing.T) {
 	want := `{
-  "base_code": 404,
-  "message": "Not found",
-  "extended_codes": [
-    {
-      "code": 1000,
-      "message": "Order"
-    },
-    {
-      "code": 0,
-      "message": "can't find order"
+  "code": 0,
+  "message": "can't find order",
+  "parent": {
+    "code": 1000,
+    "message": "Order",
+    "parent": {
+      "code": 404,
+      "message": "Not found"
     }
-  ]
+  }
 }`
 
 	got := gost.NewErrX(_notFound, "Not found").Extend(_order, "Order").Extend(0, "can't find order")
