@@ -113,11 +113,30 @@ func (m *Mutex[V]) UpdateWithLock(fn func(v *V)) {
 	fn(&m.v)
 }
 
-func (m *Mutex[V]) SetWithLock(fn func(v V) V) {
+func (m *Mutex[V]) SetWithLock(v V) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.v = v
+}
+
+func (m *Mutex[V]) WithLock(fn func(v V) V) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.v = fn(m.v)
 }
+
+// UnsafeCopy is safe with primitive types. Type shouldn't contain interface in fields or definition.
+func (m *Mutex[V]) UnsafeCopy() V {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.v
+}
+
+// DeepCopy works with everything
+//func (m *Mutex[V]) DeepCopy() V {
+//	// TODO: copy with reflect
+//	panic("not implemented")
+//}
 
 func (m *RwLock[V]) SetWithLock(v V) {
 	m.mu.Lock()
