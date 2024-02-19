@@ -85,7 +85,21 @@ func (s *MutexSlice[V]) Clear() {
 	s.s = nil
 }
 
+// Done finishes the usage of the mutex and returns the slice.
+func (s *MutexSlice[V]) Done() []V {
+	s.mu = nil
+	return s.s
+}
+
+// UnsafeCopy might be unsafe if array contains pointers or interfaces.
 func (s *MutexSlice[V]) UnsafeCopy() []V {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return CloneArray(s.s)
+}
+
+// UnsafeSlice might be unsafe if you attempt to modify the MutexSlice after the call.
+func (s *MutexSlice[V]) UnsafeSlice() []V {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.s
