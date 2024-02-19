@@ -16,6 +16,10 @@ type Pair[L any, R any] struct {
 	Right R
 }
 
+func NewPair[L any, R any](l L, r R) Pair[L, R] {
+	return Pair[L, R]{Left: l, Right: r}
+}
+
 type Tuple[V any] []V
 
 func Ok[V any](value V) Result[V] {
