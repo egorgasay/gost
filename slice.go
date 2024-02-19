@@ -84,3 +84,27 @@ func (s *MutexSlice[V]) Clear() {
 	defer s.mu.Unlock()
 	s.s = nil
 }
+
+func (s *MutexSlice[V]) UnsafeCopy() []V {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.s
+}
+
+func (s *MutexSlice[V]) GetRange(i, j int) []V {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.s[i:j]
+}
+
+func (s *MutexSlice[V]) SetRange(i, j int, v []V) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.s = append(s.s[:i], append(v, s.s[j:]...)...)
+}
+
+func (s *MutexSlice[V]) ClearRange(i, j int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.s = append(s.s[:i], s.s[j:]...)
+}
