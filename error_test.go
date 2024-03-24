@@ -80,7 +80,7 @@ func TestErrXIs(t *testing.T) {
 		{"extWith_Extend_fmt_Errorf", func() (err error, target error) {
 			err1 := NewErrX(1, "3")
 
-			return err1, fmt.Errorf("%w: %s", err1.Extend(2, "12"), err1)
+			return err1, fmt.Errorf("%w: %w", err1.Extend(2, "12"), err1)
 		}},
 		{"extWith_Extend_errors_Join", func() (err error, target error) {
 			err1 := NewErrX(1, "3")

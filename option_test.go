@@ -1,8 +1,9 @@
 package gost_test
 
 import (
-	"github.com/egorgasay/gost"
 	"testing"
+
+	"github.com/egorgasay/gost"
 )
 
 func TestOption(t *testing.T) {

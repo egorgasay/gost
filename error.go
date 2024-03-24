@@ -225,13 +225,23 @@ func (x *ErrX) Is(target error) bool {
 }
 
 func (x *ErrX) IsX(targetX *ErrX) bool {
+	if targetX == nil {
+		return x == nil
+	}
+
 	if x.baseCode != targetX.baseCode {
 		return false
 	}
 
 	if x.extCode != targetX.extCode {
 		if x.parent == nil {
-			return false
+			for targetX.parent != nil {
+				if x == targetX.parent {
+					return true
+				}
+
+				targetX = targetX.parent
+			}
 		}
 
 		return x.parent.Is(targetX)
