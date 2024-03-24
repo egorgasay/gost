@@ -1,12 +1,14 @@
 package gost
 
+import "strings"
+
 type Result[V any] struct {
-	err   *Error
+	err   *ErrX
 	value *V
 }
 
 type ResultN struct {
-	err *Error
+	err *ErrX
 }
 
 type Nothing struct{}
@@ -28,13 +30,13 @@ func Ok[V any](value V) Result[V] {
 	}
 }
 
-func Err[V any](err *Error) Result[V] {
+func Err[V any](err *ErrX) Result[V] {
 	return Result[V]{
 		err: err,
 	}
 }
 
-func ErrN(err *Error) ResultN {
+func ErrN(err *ErrX) ResultN {
 	return ResultN{err: err}
 }
 
@@ -48,39 +50,65 @@ func (ResultN) Ok() ResultN {
 	return ResultN{}
 }
 
-func (Result[V]) Err(err *Error) Result[V] {
+func (Result[V]) Err(err *ErrX) Result[V] {
 	return Result[V]{
 		err: err,
 	}
 }
 
-func (ResultN) Err(err *Error) ResultN {
+func (ResultN) Err(err *ErrX) ResultN {
 	return ResultN{
 		err: err,
 	}
 }
 
-func (Result[V]) ErrNew(code, extCode int, msg string) Result[V] {
+func (Result[V]) ErrNew(code, extCode int, msg ...string) Result[V] {
+	fMsg, sMsg := "", ""
+
+	if len(msg) > 0 {
+		fMsg = msg[0]
+		if len(msg) > 1 {
+			sMsg = msg[1]
+
+			if len(msg) > 2 {
+				sMsg = strings.Join(msg[1:], ErrXMessageSeparator)
+			}
+		}
+	}
+
 	return Result[V]{
-		err: NewError(code, extCode, msg),
+		err: NewErrX(code, fMsg).Extend(extCode, sMsg),
 	}
 }
 
-func (ResultN) ErrNew(code, extCode int, msg string) ResultN {
+func (ResultN) ErrNew(code, extCode int, msg ...string) ResultN {
+	fMsg, sMsg := "", ""
+
+	if len(msg) > 0 {
+		fMsg = msg[0]
+		if len(msg) > 1 {
+			sMsg = msg[1]
+
+			if len(msg) > 2 {
+				sMsg = strings.Join(msg[1:], ErrXMessageSeparator)
+			}
+		}
+	}
+
 	return ResultN{
-		err: NewError(code, extCode, msg),
+		err: NewErrX(code, fMsg).Extend(extCode, sMsg),
 	}
 }
 
 func (Result[V]) ErrNewUnknown(msg string) Result[V] {
 	return Result[V]{
-		err: NewErrorUnknown(msg),
+		err: NewErrX(0, msg),
 	}
 }
 
 func (ResultN) ErrNewUnknown(msg string) ResultN {
 	return ResultN{
-		err: NewErrorUnknown(msg),
+		err: NewErrX(0, msg),
 	}
 }
 
@@ -100,9 +128,9 @@ func (r *Result[V]) Expect(msg string) V {
 	return *r.value
 }
 
-func (r Result[V]) UnwrapOrElse(fn func(err Error) V) V {
+func (r Result[V]) UnwrapOrElse(fn func(err *ErrX) V) V {
 	if r.err != nil {
-		return fn(*r.err)
+		return fn(r.err)
 	}
 
 	return *r.value
@@ -124,7 +152,7 @@ func (r Result[V]) UnwrapOr(v V) V {
 	return *r.value
 }
 
-func (r Result[V]) Error() *Error {
+func (r Result[V]) Error() *ErrX {
 	return r.err
 }
 
@@ -136,7 +164,7 @@ func (r Result[V]) IsErr() bool {
 	return r.err != nil
 }
 
-func (r ResultN) Error() *Error {
+func (r ResultN) Error() *ErrX {
 	return r.err
 }
 
@@ -179,7 +207,7 @@ func (r ResultN) ErrorStd() error {
 	return r.err
 }
 
-//func (r Result[V]) Separate() (v V, err *Error) {
+//func (r Result[V]) Separate() (v V, err *ErrX) {
 //	if r.value == nil {
 //		return v, r.err
 //	}
