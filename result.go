@@ -176,6 +176,12 @@ func (r ResultN) IsErr() bool {
 	return r.err != nil
 }
 
+func (r ResultN) Unwrap() {
+	if r.err != nil {
+		panic(r.err)
+	}
+}
+
 type switchOption bool
 
 const (
