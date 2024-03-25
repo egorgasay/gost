@@ -63,7 +63,7 @@ func NewSecureMutexV[V any](v V) SecureMutexUnlocked[V] {
 }
 
 var (
-	ErrMutexIsLocked = NewError(0, 0, "mutex is locked")
+	ErrMutexIsLocked = NewErrX(0, "mutex is locked")
 )
 
 func NewMutex[V any](v V) Mutex[V] {
