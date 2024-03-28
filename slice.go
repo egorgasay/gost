@@ -36,12 +36,40 @@ func (s *MutexSlice[V]) RPop() V {
 	return v
 }
 
+func (s *MutexSlice[V]) RPopCheck() (V, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if len(s.s) == 0 {
+		var v V
+		return v, false
+	}
+
+	v := s.s[len(s.s)-1]
+	s.s = s.s[:len(s.s)-1]
+	return v, true
+}
+
 func (s *MutexSlice[V]) LPop() V {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	v := s.s[0]
 	s.s = s.s[1:]
 	return v
+}
+
+func (s *MutexSlice[V]) LPopCheck() (V, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if len(s.s) == 0 {
+		var v V
+		return v, false
+	}
+
+	v := s.s[0]
+	s.s = s.s[1:]
+	return v, true
 }
 
 func (s *MutexSlice[V]) InsertAt(i int, v V) *MutexSlice[V] {
@@ -121,4 +149,26 @@ func (s *MutexSlice[V]) ClearRange(i, j int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.s = append(s.s[:i], s.s[j:]...)
+}
+
+func (s *MutexSlice[V]) Iter(f func(v V) (stop bool)) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	for _, v := range s.s {
+		if stop := f(v); stop {
+			return
+		}
+	}
+}
+
+func (s *MutexSlice[V]) IterMut(f func(v *V) (stop bool)) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for _, v := range s.s {
+		if stop := f(&v); stop {
+			return
+		}
+	}
 }
