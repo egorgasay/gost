@@ -189,6 +189,18 @@ func (x ErrX) Message() string {
 	return x.message
 }
 
+func (x ErrX) Messages() []string {
+	if x.parent == nil {
+		return []string{x.message}
+	}
+
+	return append(x.parent.Messages(), x.message)
+}
+
+func (x ErrX) MessagesSpace() string {
+	return strings.TrimSpace(strings.Join(x.Messages(), " "))
+}
+
 //var Nil = ErrX{baseCode: nil}
 
 func (x *ErrX) Extend(extCode int, messages ...string) *ErrX {

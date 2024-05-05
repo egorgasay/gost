@@ -105,3 +105,56 @@ func TestErrXIs(t *testing.T) {
 		})
 	}
 }
+
+func TestErrX_MessagesSpace(t *testing.T) {
+	type fields struct {
+		baseCode int
+		extCode  int
+		message  string
+		parent   *ErrX
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   string
+	}{
+		{
+			name: "Single Message",
+			fields: fields{
+				baseCode: 100,
+				extCode:  0,
+				message:  "Initial error",
+				parent:   nil,
+			},
+			want: "Initial error",
+		},
+		{
+			name: "Nested Message",
+			fields: fields{
+				baseCode: 100,
+				extCode:  200,
+				message:  "Extended error",
+				parent: &ErrX{
+					baseCode: 100,
+					extCode:  0,
+					message:  "Initial error",
+					parent:   nil,
+				},
+			},
+			want: "Initial error Extended error",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			x := ErrX{
+				baseCode: tt.fields.baseCode,
+				extCode:  tt.fields.extCode,
+				message:  tt.fields.message,
+				parent:   tt.fields.parent,
+			}
+			if got := x.MessagesSpace(); got != tt.want {
+				t.Errorf("ErrX.MessagesSpace() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

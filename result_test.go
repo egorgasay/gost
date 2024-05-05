@@ -16,14 +16,14 @@ func TestResult(t *testing.T) {
 	}
 
 	f = func() gost.Result[int] {
-		return gost.Err[int](gost.NewError(1, 2, "test"))
+		return gost.Err[int](gost.NewErrX(1, "test").Extend(2))
 	}
 
-	if res := f().Error(); res.BaseCode() != 1 || res.ExtendedCode() != 2 || res.Message() != "test" {
+	if res := f().Error(); res.BaseCode() != 1 || res.ExtCode() != 2 || res.MessagesSpace() != "test" {
 		t.Fatal("unexpected error:", res)
 	}
 
 	_ = func() gost.ResultN {
-		return gost.ErrN(gost.NewError(1, 2, "test"))
+		return gost.ErrN(gost.NewErrX(1, "test").Extend(2))
 	}().Error()
 }

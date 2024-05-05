@@ -101,6 +101,16 @@ func (s *MutexSlice[V]) Get(i int) V {
 	return s.s[i]
 }
 
+func (s *MutexSlice[V]) GetCheck(i int) (V, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if i < 0 || i >= len(s.s) {
+		var v V
+		return v, false
+	}
+	return s.s[i], true
+}
+
 func (s *MutexSlice[V]) Set(i int, v V) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
